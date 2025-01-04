@@ -12,46 +12,27 @@ import {
 import axios from "axios";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import Fontisto from "@expo/vector-icons/Fontisto";
+import { Paystack } from "react-native-paystack-webview";
+
 const PaymentForm = () => {
+  const [makingPayment, setMakingPayment] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState({
     cardHolderName: "",
     cardNumber: "",
     expirationDate: "",
     cvv: "",
+    amount: 3999,
   });
 
-  const BACKEND_URL = "http://localhost:3000/process-payment";
-
-  const tokenizeCard = async () => {
-    try {
-      const response = await axios.post(BACKEND_URL, {
-        cardDetails: {
-          token_type: "credit_card",
-          holder_name: paymentDetails.cardHolderName,
-          expiration_date: paymentDetails.expirationDate,
-          card_number: paymentDetails.cardNumber,
-        },
-        amount: 385785,
-        currency: "ZAR",
-      });
-
-      if (response.data.success) {
-        ToastAndroid.show(
-          "Payment Successful",
-          "Your payment has been processed.",
-          ToastAndroid.SHORT
-        );
-      } else {
-        throw new Error("Payment processing failed");
-      }
-    } catch (error) {
-      console.error("Payment Error:", error);
-      ToastAndroid.show(
-        "Payment Failed",
-        "There was an issue processing your payment.",
-        ToastAndroid.SHORT
-      );
-    }
+  const submit = async () => {
+    setMakingPayment(false);
+    setPaymentDetails({
+      cardHolderName: "",
+      cardNumber: "",
+      expirationDate: "",
+      cvv: "",
+      amount: 3999,
+    });
   };
 
   return (
@@ -117,11 +98,42 @@ const PaymentForm = () => {
           {/* </View> */}
         </View>
         <TouchableOpacity style={styles.button} disabled>
-          <Text style={styles.buttonText} onPress={tokenizeCard}>
+          <Text
+            style={styles.buttonText}
+            onPress={() => {
+              setMakingPayment(true);
+            }}
+          >
             Complete Order
           </Text>
         </TouchableOpacity>
       </View>
+      {makingPayment && (
+        <View style={{ flex: 1 }}>
+          <Paystack
+            paystackKey="pk_test_b6e75075e9a5601a259702db3b9a0a18d6552c37"
+            amount={paymentDetails.amount}
+            billingEmail={`${paymentDetails.cardHolderName}@gmail.com`}
+            currency="ZAR"
+            activityIndicatorColor="green"
+            onCancel={(e) => {
+              console.log("Payment cancelled", e);
+              setPaymentDetails({
+                cardHolderName: "",
+                cardNumber: "",
+                expirationDate: "",
+                cvv: "",
+                amount: 3999,
+              });
+            }}
+            onSuccess={(res) => {
+              console.log("Payment successful", res);
+              submit();
+            }}
+            autoStart={true}
+          />
+        </View>
+      )}
     </View>
   );
 };
